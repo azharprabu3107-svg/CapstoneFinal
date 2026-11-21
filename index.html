@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#102f2b" />
+  <meta name="description" content="Dashboard analitik kinerja penjualan dan cabang Kimia Farma periode 2020–2023." />
+  <title>Kimia Farma | Business Performance</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['IBM Plex Sans', 'sans-serif'] },
+          colors: {
+            forest: { 50: '#edf5f2', 100: '#dcebe5', 600: '#087568', 700: '#075e55', 800: '#10443e', 900: '#102f2b' },
+            ink: '#172b28',
+            muted: '#71817d',
+            canvas: '#f5f7f6'
+          }
+        }
+      }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="font-sans">
+  <!-- Loading screen -->
+  <div id="loading-screen" class="loading-screen" role="status" aria-live="polite">
+    <div class="loading-brand">
+      <span class="brand-mark">KF</span>
+      <div>
+        <div class="loading-brand-name">Kimia Farma</div>
+        <div class="loading-brand-caption">BUSINESS PERFORMANCE</div>
+      </div>
+    </div>
+    <div class="loading-copy" id="load-status">Menyiapkan dashboard</div>
+    <div class="loading-track"><span id="load-bar"></span></div>
+    <div class="loading-detail" id="load-detail">Menghubungkan ke sumber data…</div>
+  </div>
+
+  <!-- Error screen -->
+  <div id="error-screen" class="error-screen hidden" role="alert">
+    <div class="error-mark">!</div>
+    <p class="eyebrow">DATA CONNECTION</p>
+    <h1>Dashboard belum dapat dimuat</h1>
+    <p id="error-msg" class="error-message"></p>
+    <p class="error-help">Jalankan <strong>index.html</strong> melalui Live Server dan pastikan folder <code>data/raw/</code> berisi keempat file CSV.</p>
+  </div>
+
+  <div id="app" class="app-shell hidden">
+    <!-- Sidebar -->
+    <aside class="sidebar" aria-label="Navigasi utama">
+      <a class="sidebar-brand" href="#overview" data-page-link="overview" aria-label="Kimia Farma Overview">
+        <span class="brand-mark">KF</span>
+        <span class="brand-copy">
+          <strong>Kimia Farma</strong>
+          <small>BUSINESS INTELLIGENCE</small>
+        </span>
+      </a>
+
+      <div class="sidebar-section-label">ANALYTICS</div>
+      <nav class="side-nav">
+        <button class="nav-item is-active" data-page="overview" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1"/><rect x="13.5" y="3.5" width="7" height="4" rx="1"/><rect x="13.5" y="10.5" width="7" height="10" rx="1"/><rect x="3.5" y="13.5" width="7" height="7" rx="1"/></svg>
+          <span>Overview</span>
+        </button>
+        <button class="nav-item" data-page="sales" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18.5V5.5M4 18.5h16M7 15l4-4 3 2 5-6"/><path d="M15.5 7H19v3.5"/></svg>
+          <span>Sales analytics</span>
+        </button>
+        <button class="nav-item" data-page="regional" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s7-6.1 7-12a7 7 0 1 0-14 0c0 5.9 7 12 7 12Z"/><circle cx="12" cy="9" r="2.3"/></svg>
+          <span>Regional analytics</span>
+        </button>
+        <button class="nav-item" data-page="product" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 8 4.2v9.6L12 21l-8-4.2V7.2L12 3Z"/><path d="m4.5 7.5 7.5 4 7.5-4M12 12v8.5"/></svg>
+          <span>Product analytics</span>
+        </button>
+        <button class="nav-item" data-page="customer" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20v-1.2a5.5 5.5 0 0 1 11 0V20M16 5.5a3 3 0 0 1 0 5.8M17 14.5a4.5 4.5 0 0 1 3.5 4.4V20"/></svg>
+          <span>Customer experience</span>
+        </button>
+        <button class="nav-item" data-page="inventory" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3.5 7 8.5-4 8.5 4v10L12 21l-8.5-4V7Z"/><path d="m3.8 7.2 8.2 4 8.2-4M12 11.2V21M8 5l8.5 4"/></svg>
+          <span>Inventory records</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-bottom">
+        <div class="sidebar-period-label">DATA COVERAGE</div>
+        <div class="sidebar-period">Jan 2020 — Sep 2023</div>
+        <div class="sidebar-footnote">Internal performance view<br />Project Stone · Data Analytics</div>
+      </div>
+    </aside>
+
+    <!-- Main column -->
+    <div class="main-column">
+      <header class="topbar">
+        <div class="topbar-left">
+          <div class="topbar-kicker">KIMIA FARMA <span>/</span> ANALYTICS</div>
+          <div class="topbar-title" id="topbar-title">Overview</div>
+        </div>
+        <div class="topbar-right">
+          <div class="period-chip"><span class="live-dot"></span><span id="header-period">Jan 2020 — Sep 2023</span></div>
+          <button id="btn-export" class="button button-quiet" type="button" title="Ekspor ringkasan berdasarkan filter aktif">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v3h16v-3"/></svg>
+            <span>Export summary</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Mobile navigation -->
+      <nav class="mobile-nav" aria-label="Navigasi halaman">
+        <button class="mobile-nav-item is-active" data-page="overview" type="button">Overview</button>
+        <button class="mobile-nav-item" data-page="sales" type="button">Sales</button>
+        <button class="mobile-nav-item" data-page="regional" type="button">Regional</button>
+        <button class="mobile-nav-item" data-page="product" type="button">Products</button>
+        <button class="mobile-nav-item" data-page="customer" type="button">Customer</button>
+        <button class="mobile-nav-item" data-page="inventory" type="button">Inventory</button>
+      </nav>
+
+      <main class="content-area">
+        <!-- Page heading and filters -->
+        <div class="page-heading-row">
+          <div>
+            <p class="eyebrow" id="page-eyebrow">EXECUTIVE VIEW</p>
+            <h1 id="page-heading">Business performance overview</h1>
+            <p class="page-description" id="page-description">Ringkasan kinerja penjualan, jaringan cabang, dan pengalaman pelanggan.</p>
+          </div>
+          <div class="data-context" id="data-context">672.458 transaksi · 1.725 cabang</div>
+        </div>
+
+        <section class="filter-panel" aria-label="Filter dashboard">
+          <div class="filter-panel-heading">
+            <div class="filter-heading-main">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l-6.2 7.2v5.3l-3.6 2v-7.3L4 5Z"/></svg>
+              <span>Refine data</span>
+            </div>
+            <button id="btn-reset" class="reset-button" type="button">Reset filters</button>
+          </div>
+          <div class="filter-controls">
+            <label class="filter-control"><span>Year</span><select id="f-tahun"><option value="">All years</option></select></label>
+            <label class="filter-control"><span>Province</span><select id="f-provinsi"><option value="">All provinces</option></select></label>
+            <label class="filter-control"><span>Branch type</span><select id="f-cabang"><option value="">All branch types</option></select></label>
+            <label class="filter-control"><span>Product category</span><select id="f-produk"><option value="">All categories</option></select></label>
+          </div>
+          <div id="active-filter-tags" class="active-filter-tags" aria-live="polite"></div>
+        </section>
+
+        <!-- Overview -->
+        <section class="page-view is-active" id="page-overview" data-view="overview">
+          <div class="section-heading compact-heading">
+            <div><span class="section-index">01</span><h2>Performance snapshot</h2></div>
+            <span class="section-note">Berdasarkan filter aktif</span>
+          </div>
+          <div class="kpi-grid" id="kpi-grid">
+            <article class="kpi-card kpi-primary"><div class="kpi-topline"><span>Total net sales</span><span class="kpi-symbol">↗</span></div><div class="kpi-value" id="k-sales">—</div><div class="kpi-foot" id="k-sales-sub">Penjualan setelah diskon</div></article>
+            <article class="kpi-card"><div class="kpi-topline"><span>Transactions</span><span class="kpi-symbol neutral">▤</span></div><div class="kpi-value" id="k-trx">—</div><div class="kpi-foot" id="k-trx-sub">Transaksi tercatat</div></article>
+            <article class="kpi-card"><div class="kpi-topline"><span>Avg. transaction value</span><span class="kpi-symbol neutral">↗</span></div><div class="kpi-value" id="k-atv">—</div><div class="kpi-foot">Net sales ÷ transaksi</div></article>
+            <article class="kpi-card"><div class="kpi-topline"><span>Average discount</span><span class="kpi-symbol neutral">%</span></div><div class="kpi-value" id="k-discount">—</div><div class="kpi-foot">Rata-rata per transaksi</div></article>
+            <article class="kpi-card"><div class="kpi-topline"><span>Transaction rating</span><span class="kpi-symbol neutral">★</span></div><div class="kpi-value" id="k-rating">—</div><div class="kpi-foot" id="k-rating-sub">Rata-rata rating transaksi</div></article>
+            <article class="kpi-card"><div class="kpi-topline"><span>Branches transacting</span><span class="kpi-symbol neutral">⌖</span></div><div class="kpi-value" id="k-cabang">—</div><div class="kpi-foot" id="k-cabang-sub">Dari seluruh cabang terdaftar</div></article>
+          </div>
+
+          <div class="section-heading">
+            <div><span class="section-index">02</span><h2>Sales performance</h2></div>
+            <span class="section-note">Net sales setelah diskon</span>
+          </div>
+          <div class="dashboard-grid overview-grid">
+            <article class="panel panel-large">
+              <div class="panel-heading"><div><h3>Monthly net sales</h3><p>Perkembangan nilai penjualan per bulan</p></div><span class="panel-meta" id="sub-trend">—</span></div>
+              <div class="chart-area chart-area-tall"><canvas id="chart-trend" role="img" aria-label="Tren net sales bulanan"></canvas><div id="empty-trend" class="chart-empty hidden">Tidak ada data pada kombinasi filter ini.</div></div>
+            </article>
+            <article class="panel">
+              <div class="panel-heading"><div><h3>Annual comparison</h3><p>Net sales per tahun</p></div></div>
+              <div class="chart-area chart-area-tall"><canvas id="chart-annual" role="img" aria-label="Perbandingan net sales tahunan"></canvas><div id="empty-annual" class="chart-empty hidden">Tidak ada data pada filter ini.</div></div>
+              <div class="panel-footnote" id="sub-annual">—</div>
+            </article>
+          </div>
+
+          <div class="section-heading">
+            <div><span class="section-index">03</span><h2>Where value comes from</h2></div>
+            <span class="section-note">Kontribusi wilayah dan kategori</span>
+          </div>
+          <div class="dashboard-grid two-col-grid">
+            <article class="panel"><div class="panel-heading"><div><h3>Top provinces by net sales</h3><p>Sepuluh provinsi dengan kontribusi terbesar</p></div><span class="panel-meta" id="sub-prov-sales">—</span></div><div class="chart-area chart-area-medium"><canvas id="chart-prov-sales" role="img" aria-label="Top provinsi berdasarkan net sales"></canvas><div id="empty-prov-sales" class="chart-empty hidden">Tidak ada data.</div></div></article>
+            <article class="panel"><div class="panel-heading"><div><h3>Product category sales mix</h3><p>Proporsi net sales dari delapan kategori produk</p></div></div><div class="chart-area chart-area-medium"><canvas id="chart-prod-cat" role="img" aria-label="Net sales per kategori produk"></canvas><div id="empty-prod-cat" class="chart-empty hidden">Tidak ada data.</div></div></article>
+          </div>
+
+          <div class="section-heading">
+            <div><span class="section-index">04</span><h2>Signals from the data</h2></div>
+            <span class="section-note">Insight otomatis dari data terfilter</span>
+          </div>
+          <div class="insight-grid" id="insight-grid">
+            <article class="insight-card"><span class="insight-label">TOP PROVINCE</span><strong id="insight-province-value">—</strong><p id="insight-province-copy">—</p></article>
+            <article class="insight-card"><span class="insight-label">TOP PRODUCT CATEGORY</span><strong id="insight-category-value">—</strong><p id="insight-category-copy">—</p></article>
+            <article class="insight-card"><span class="insight-label">TOP BRANCH</span><strong id="insight-branch-value">—</strong><p id="insight-branch-copy">—</p></article>
+          </div>
+          <p class="method-note">Net sales dihitung dari price setelah discount_percentage. Dataset tidak menyediakan harga pokok penjualan (HPP), sehingga profit dan margin laba tidak dihitung.</p>
+        </section>
+
+        <!-- Sales analytics -->
+        <section class="page-view" id="page-sales" data-view="sales">
+          <div class="section-heading compact-heading"><div><span class="section-index">01</span><h2>Sales trend</h2></div><span class="section-note">Nilai penjualan setelah diskon</span></div>
+          <div class="dashboard-grid one-col-grid">
+            <article class="panel"><div class="panel-heading"><div><h3>Monthly net sales trend</h3><p>Pergerakan penjualan selama periode dataset</p></div><span class="panel-meta" id="sub-trend-sales">—</span></div><div class="chart-area chart-area-wide"><canvas id="chart-trend-sales" role="img" aria-label="Tren bulanan net sales"></canvas><div id="empty-trend-sales" class="chart-empty hidden">Tidak ada data.</div></div></article>
+          </div>
+          <div class="dashboard-grid two-col-grid">
+            <article class="panel"><div class="panel-heading"><div><h3>Annual net sales</h3><p>Perbandingan nilai penjualan antar tahun</p></div></div><div class="chart-area chart-area-medium"><canvas id="chart-annual-sales" role="img" aria-label="Net sales tahunan"></canvas><div id="empty-annual-sales" class="chart-empty hidden">Tidak ada data.</div></div></article>
+            <article class="panel"><div class="panel-heading"><div><h3>Discount vs. average net sales</h3><p>Rata-rata net sales transaksi pada setiap tingkat diskon</p></div><span class="panel-meta">Deskriptif, bukan kausal</span></div><div class="chart-area chart-area-medium"><canvas id="chart-discount" role="img" aria-label="Diskon dibanding rata-rata net sales"></canvas><div id="empty-discount" class="chart-empty hidden">Tidak cukup data.</div></div></article>
+          </div>
+          <p class="method-note">Grafik diskon menggambarkan hubungan deskriptif antara besaran diskon dan rata-rata nilai transaksi. Grafik ini tidak membuktikan bahwa diskon menyebabkan kenaikan atau penurunan penjualan.</p>
+        </section>
+
+        <!-- Regional analytics -->
+        <section class="page-view" id="page-regional" data-view="regional">
+          <div class="section-heading compact-heading"><div><span class="section-index">01</span><h2>Regional contribution</h2></div><span class="section-note">Wilayah mengikuti alamat cabang</span></div>
+          <div class="dashboard-grid two-col-grid">
+            <article class="panel"><div class="panel-heading"><div><h3>Top provinces by net sales</h3><p>Sepuluh provinsi dengan nilai tertinggi</p></div><span class="panel-meta" id="sub-prov-sales-reg">—</span></div><div class="chart-area chart-area-tall"><canvas id="chart-prov-sales-reg" role="img" aria-label="Top provinsi berdasarkan net sales"></canvas><div id="empty-prov-sales-reg" class="chart-empty hidden">Tidak ada data.</div></div></article>
+            <article class="panel"><div class="panel-heading"><div><h3>Province transaction footprint</h3><p>Top 10 provinsi berdasarkan volume transaksi · perbandingan net sales dan jumlah transaksi</p></div></div><div class="chart-area chart-area-tall"><canvas id="chart-prov-trx" role="img" aria-label="Jumlah transaksi per provinsi"></canvas><div id="empty-prov-trx" class="chart-empty hidden">Tidak ada data.</div></div></article>
+          </div>
+          <div class="section-heading"><div><span class="section-index">02</span><h2>Branch performance</h2></div><span class="section-note">Berdasarkan transaksi pada cabang</span></div>
+          <div class="dashboard-grid two-col-grid">
+            <article class="panel"><div class="panel-heading"><div><h3>Top 10 branches by net sales</h3><p>Cabang dengan nilai penjualan terbesar</p></div><span class="panel-meta" id="sub-top-branch">—</span></div><div class="chart-area chart-area-tall"><canvas id="chart-top-branch" role="img" aria-label="Top cabang berdasarkan net sales"></canvas><div id="empty-top-branch" class="chart-empty hidden">Tidak ada data.</div></div></article>
+            <article class="panel"><div class="panel-heading"><div><h3>Branch type sales mix</h3><p>Proporsi net sales berdasarkan jenis cabang</p></div></div><div class="chart-area chart-area-tall"><canvas id="chart-branch-cat" role="img" aria-label="Net sales per kategori cabang"></canvas><div id="empty-branch-cat" class="chart-empty hidden">Tidak ada data.</div></div></article>
+          </div>
+          <div class="section-heading"><div><span class="section-index">03</span><h2>Branch rating comparison</h2></div><span class="section-note">Selisih rating cabang dan rating transaksi</span></div>
+          <article class="panel table-panel"><div class="panel-heading"><div><h3>Largest positive rating gaps</h3><p>Cabang dengan rating cabang lebih tinggi dibanding rata-rata rating transaksinya</p></div><span class="panel-meta">Top 10</span></div><div class="table-scroll"><table class="data-table"><thead><tr><th>#</th><th>Branch</th><th>City</th><th>Province</th><th class="numeric">Branch rating</th><th class="numeric">Transaction rating</th><th class="numeric">Transactions</th><th class="numeric">Gap</th></tr></thead><tbody id="rating-gap-tbody"><tr><td colspan="8" class="table-empty-cell">Memuat data…</td></tr></tbody></table></div></article>
+        </section>
+
+        <!-- Product analytics -->
+        <section class="page-view" id="page-product" data-view="product">
+          <div class="section-heading compact-heading"><div><span class="section-index">01</span><h2>Product contribution</h2></div><span class="section-note">Berdasarkan nilai transaksi</span></div>
+          <div class="dashboard-grid two-col-grid">
+            <article class="panel"><div class="panel-heading"><div><h3>Net sales by product category</h3><p>Kontribusi setiap kategori produk</p></div></div><div class="chart-area chart-area-tall"><canvas id="chart-prod-cat-page" role="img" aria-label="Net sales kategori produk"></canvas><div id="empty-prod-cat-page" class="chart-empty hidden">Tidak ada data.</div></div></article>
+            <article class="panel"><div class="panel-heading"><div><h3>Transaction volume by category</h3><p>Perbandingan jumlah transaksi pada tiap kategori produk</p></div></div><div class="chart-area chart-area-tall"><canvas id="chart-prod-count" role="img" aria-label="Jumlah transaksi kategori produk"></canvas><div id="empty-prod-count" class="chart-empty hidden">Tidak ada data.</div></div></article>
+          </div>
+          <div class="section-heading"><div><span class="section-index">02</span><h2>Product leaders</h2></div><span class="section-note">Sepuluh produk berdasarkan net sales</span></div>
+          <article class="panel"><div class="panel-heading"><div><h3>Top 10 products by net sales</h3><p>Produk dengan kontribusi penjualan tertinggi</p></div></div><div class="chart-area chart-area-tall"><canvas id="chart-top-products" role="img" aria-label="Top produk berdasarkan net sales"></canvas><div id="empty-top-products" class="chart-empty hidden">Tidak ada data.</div></div></article>
+          <p class="method-note">Dataset tidak memiliki kolom kuantitas. Karena itu, analisis produk menggunakan jumlah transaksi dan nilai penjualan, bukan unit produk terjual.</p>
+        </section>
+
+        <!-- Customer experience -->
+        <section class="page-view" id="page-customer" data-view="customer">
+          <div class="section-heading compact-heading"><div><span class="section-index">01</span><h2>Transaction experience</h2></div><span class="section-note">Rating yang tercatat pada transaksi</span></div>
+          <div class="dashboard-grid two-col-grid">
+            <article class="panel"><div class="panel-heading"><div><h3>Transaction rating distribution</h3><p>Frekuensi seluruh nilai rating yang tercatat</p></div><span class="panel-meta" id="sub-rating-dist">—</span></div><div class="chart-area chart-area-tall"><canvas id="chart-rating-dist" role="img" aria-label="Distribusi rating transaksi"></canvas><div id="empty-rating-dist" class="chart-empty hidden">Tidak ada data rating.</div></div></article>
+            <article class="panel"><div class="panel-heading"><div><h3>Average transaction rating by province</h3><p>Rata-rata rating transaksi per provinsi</p></div></div><div class="chart-area chart-area-tall"><canvas id="chart-province-rating" role="img" aria-label="Rata-rata rating transaksi per provinsi"></canvas><div id="empty-province-rating" class="chart-empty hidden">Tidak ada data.</div></div></article>
+          </div>
+          <div class="experience-note"><div class="experience-note-mark">i</div><div><strong>Interpretasi rating</strong><p>Rata-rata dan distribusi rating menggambarkan penilaian yang dicatat pada transaksi. Dataset tidak menyediakan identitas responden atau alasan pemberian rating, sehingga hasil ini tidak menjelaskan penyebab pengalaman pelanggan.</p></div></div>
+        </section>
+
+        <!-- Inventory analysis -->
+        <section class="page-view" id="page-inventory" data-view="inventory">
+          <div class="section-heading compact-heading"><div><span class="section-index">01</span><h2>Inventory record overview</h2></div><span class="section-note">Catatan opname, bukan saldo stok terkini</span></div>
+          <div class="inventory-kpi-grid">
+            <article class="inventory-stat"><span>Inventory records</span><strong id="inv-records">—</strong><small>Jumlah baris pada file inventaris</small></article>
+            <article class="inventory-stat"><span>Unique branch–product pairs</span><strong id="inv-pairs">—</strong><small>Kombinasi cabang dan produk unik</small></article>
+            <article class="inventory-stat"><span>Additional records</span><strong id="inv-repeated">—</strong><small>Catatan di luar kombinasi unik</small></article>
+            <article class="inventory-stat"><span>Zero stock records</span><strong id="inv-zero">—</strong><small>Baris dengan opname_stock = 0</small></article>
+          </div>
+          <article class="panel"><div class="panel-heading"><div><h3>Recorded opname_stock distribution</h3><p>Distribusi nilai pada setiap baris catatan inventaris</p></div><span class="panel-meta" id="inv-chart-meta">—</span></div><div class="chart-area chart-area-wide"><canvas id="chart-inventory" role="img" aria-label="Distribusi nilai opname stock pada catatan inventaris"></canvas><div id="empty-inventory" class="chart-empty hidden">Tidak ada catatan pada filter ini.</div></div></article>
+          <div class="experience-note inventory-warning"><div class="experience-note-mark">!</div><div><strong>Batasan interpretasi inventaris</strong><p>File inventaris berisi beberapa catatan untuk kombinasi cabang–produk yang sama dan tidak menyediakan tanggal pencatatan. Dashboard menghitung jumlah catatan, kombinasi unik, catatan berulang, serta distribusi nilai opname_stock. Nilai tersebut tidak dijumlahkan sebagai stok aktual dan tidak digunakan untuk menetapkan status stok kritis.</p></div></div>
+          <p class="inventory-filter-note" id="inventory-filter-note">Filter tahun tidak diterapkan pada inventaris karena dataset tidak memiliki kolom tanggal. Filter provinsi, tipe cabang, dan kategori produk diterapkan melalui tabel referensi.</p>
+        </section>
+
+        <footer class="app-footer"><span>Kimia Farma · Business Performance Analytics</span><span>Data transaksi 2020–2023 · Project Stone</span></footer>
+      </main>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
